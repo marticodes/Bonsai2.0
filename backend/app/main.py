@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.interview import router as interview_router
+from app.api.curate import router as curate_router
+
 
 
 app = FastAPI()
@@ -19,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(interview_router)
+app.include_router(curate_router)
 
 
 @app.get("/")

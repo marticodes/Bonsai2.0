@@ -28,6 +28,12 @@ export default function InterviewPage() {
     },
   ]);
 
+  const [testPost, setTestPost] = useState("");
+  const [testResult, setTestResult] = useState<{
+    score: number;
+    reason: string;
+  } | null>(null);
+
   const [stage, setStage] = useState(1);
   const [stageQuestionCount, setStageQuestionCount] = useState(0);
   const [specification, setSpecification] =
@@ -129,6 +135,8 @@ export default function InterviewPage() {
             "Generated Feed Specification:",
             specification
           );
+
+          setSpecification(specification);
       
           return specification;
       
@@ -283,13 +291,13 @@ export default function InterviewPage() {
                   }
                 }}
                 placeholder="Write your answer..."
-                className="min-h-14 flex-1 resize-none rounded-2xl border border-gray-200 bg-white px-4 py-3 outline-none focus:border-gray-400"
+                className="min-h-14 flex-1 resize-none rounded-2xl border border-black-200 bg-white px-4 py-3 outline-none focus:border-black-400"
               />
 
               <button
                 onClick={submitAnswer}
                 disabled={!answer.trim()}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-black text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-30"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-black text-black transition hover:bg-black-800 disabled:cursor-not-allowed disabled:opacity-30"
               >
                 <ArrowRight size={18} />
               </button>
@@ -298,6 +306,58 @@ export default function InterviewPage() {
             <p className="mt-2 text-center text-xs text-gray-400">
               Press Enter to continue · Shift + Enter for a new line
             </p>
+          </div>
+        )}
+        {specification && (
+          <div>
+            <h2>Test the curator</h2>
+
+            <textarea
+              value={testPost}
+              onChange={(e) => setTestPost(e.target.value)}
+              placeholder="Paste a Bluesky post here..."
+              rows={5}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginBottom: "10px",
+              }}
+            />
+
+            <button
+              onClick={async () => {
+                if (!testPost.trim()) {
+                  return;
+                }
+
+                const response = await fetch(
+                  "http://127.0.0.1:8000/api/curate/score",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      post: testPost,
+                      specification: specification,
+                    }),
+                  }
+                );
+
+                const result = await response.json();
+
+                setTestResult(result);
+              }}
+            >
+              Score Post
+            </button>
+
+            {testResult && (
+              <div>
+                <h3>Score: {testResult.score}</h3>
+                <p>{testResult.reason}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
