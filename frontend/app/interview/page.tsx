@@ -3,34 +3,38 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useState } from "react";
 
-type Importance = "Mildly Preferred" | "Preferred" | "Essential";
-
 type Message = {
   role: "assistant" | "user";
   content: string;
 };
 
-const questions = [
-  "What would you like your Bluesky feed to help you with?",
-  "What topics are most important for you to see?",
-  "Are there any topics or types of content you would rather avoid?",
-  "What kind of tone or style do you prefer in your feed?",
-];
+type FeedSpecification = {
+  overarching_point: string;
+  best_types_of_post: string[];
+  desirable_and_decent: string[];
+  acceptable: string[];
+  better_than_nothing: string[];
+  avoid: string[];
+  penalize_for: string[];
+};
+
 
 export default function InterviewPage() {
-  const [questionIndex, setQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: questions[0],
+      content: "What would you like your Bluesky feed to help you with?",
     },
   ]);
 
-  const [waitingForImportance, setWaitingForImportance] = useState(false);
+  const [stage, setStage] = useState(1);
+  const [stageQuestionCount, setStageQuestionCount] = useState(0);
+  const [specification, setSpecification] =
+    useState<FeedSpecification | null>(null);
+  const [generatingSpec, setGeneratingSpec] = useState(false);
 
-  const [importance, setImportance] =
-    useState<Importance | null>(null);
+  const [waitingForImportance, setWaitingForImportance] = useState(false);
 
     async function submitAnswer() {
         if (!answer.trim()) return;
@@ -56,6 +60,8 @@ export default function InterviewPage() {
               },
               body: JSON.stringify({
                 conversation: updatedMessages,
+                stage: stage,
+                stage_question_count: stageQuestionCount,
               }),
             }
           );
@@ -65,23 +71,76 @@ export default function InterviewPage() {
           }
       
           const data = await response.json();
-      
-          setMessages([
+
+          setStage(data.stage);
+
+          setStageQuestionCount(
+            data.stage_question_count
+          );
+
+          const newMessages = [
             ...updatedMessages,
             {
-              role: "assistant",
+              role: "assistant" as const,
               content: data.message,
             },
-          ]);
+          ];
+
+          setMessages(newMessages);
+
+          if (data.stage === 4 && data.stage_complete) {
+            setGeneratingSpec(true);
+            const spec = await generateSpecification(newMessages);
+            if (spec) {
+              setSpecification(spec);
+              setStage(5);
+            }
+            setGeneratingSpec(false);
+          }
         } catch (error) {
           console.error(error);
         }
       }
 
-    function submitImportance(value: Importance) {
-        setImportance(value);
-        setWaitingForImportance(false);
-    }
+      const generateSpecification = async (
+        conversation: Message[]
+      ) => {
+        try {
+          const response = await fetch(
+            "http://127.0.0.1:8000/api/interview/specification",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                conversation,
+              }),
+            }
+          );
+      
+          if (!response.ok) {
+            throw new Error("Failed to generate specification");
+          }
+      
+          const specification = await response.json();
+      
+          console.log(
+            "Generated Feed Specification:",
+            specification
+          );
+      
+          return specification;
+      
+        } catch (error) {
+          console.error(
+            "Error generating specification:",
+            error
+          );
+      
+          return null;
+        }
+      };
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
@@ -101,7 +160,7 @@ export default function InterviewPage() {
             </div>
 
             <span className="text-sm text-gray-400">
-              Stage {Math.min(questionIndex + 1, 3)} of 3
+              Stage {stage} of 5
             </span>
           </div>
 
@@ -110,10 +169,7 @@ export default function InterviewPage() {
             <div
               className="h-full rounded-full bg-black transition-all"
               style={{
-                width: `${Math.min(
-                  ((questionIndex + 1) / 3) * 100,
-                  100
-                )}%`,
+                width: `${Math.min((stage / 5) * 100, 100)}%`,
               }}
             />
           </div>
@@ -161,16 +217,12 @@ export default function InterviewPage() {
                     "Mildly Preferred",
                     "Preferred",
                     "Essential",
-                  ] as Importance[]
+                  ]
                 ).map((option) => (
                   <button
                     key={option}
-                    onClick={() => submitImportance(option)}
-                    className={`rounded-full border px-4 py-2 text-sm transition ${
-                      importance === option
-                        ? "border-black bg-black text-white"
-                        : "border-gray-200 bg-white hover:border-gray-400"
-                    }`}
+                    onClick={submitAnswer}
+                    className="rounded-full border px-4 py-2 text-sm transition border-gray-200 bg-white hover:border-gray-400"
                   >
                     {option}
                   </button>
@@ -180,8 +232,42 @@ export default function InterviewPage() {
           )}
         </div>
 
+        {generatingSpec && (
+          <p className="mb-6 text-center text-sm text-gray-500">
+            Generating your feed specification...
+          </p>
+        )}
+
+        {specification && (
+          <section className="mb-8 space-y-5 rounded-2xl bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-medium">Feed specification</h2>
+            <p className="text-gray-800">{specification.overarching_point}</p>
+            {(
+              [
+                ["Best types of post", specification.best_types_of_post],
+                ["Desirable and decent", specification.desirable_and_decent],
+                ["Acceptable", specification.acceptable],
+                ["Better than nothing", specification.better_than_nothing],
+                ["Avoid", specification.avoid],
+                ["Penalize for", specification.penalize_for],
+              ] as const
+            ).map(([title, items]) => (
+              <div key={title}>
+                <h3 className="mb-2 text-sm font-medium text-gray-500">
+                  {title}
+                </h3>
+                <ul className="list-disc space-y-1 pl-5 text-gray-800">
+                  {items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
+        )}
+
         {/* Input */}
-        {!waitingForImportance && questionIndex < questions.length && (
+        {!waitingForImportance && !specification && !generatingSpec && (
           <div className="border-t border-gray-200 pt-5">
             <div className="flex items-end gap-3">
               <textarea
