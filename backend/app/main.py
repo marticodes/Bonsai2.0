@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.interview import router as interview_router
 from app.api.curate import router as curate_router
+from app.api.bluesky import router as bluesky_router
+from app.api.feed import router as feed_router
 
 
 
@@ -22,7 +24,8 @@ app.add_middleware(
 
 app.include_router(interview_router)
 app.include_router(curate_router)
-
+app.include_router(bluesky_router)
+app.include_router(feed_router)
 
 @app.get("/")
 def root():

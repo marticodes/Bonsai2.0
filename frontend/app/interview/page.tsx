@@ -137,6 +137,11 @@ export default function InterviewPage() {
           );
 
           setSpecification(specification);
+
+          localStorage.setItem(
+            "feedSpecification",
+            JSON.stringify(specification)
+          );
       
           return specification;
       
@@ -351,6 +356,12 @@ export default function InterviewPage() {
             >
               Score Post
             </button>
+
+            {specification && (
+              <a href="/feed">
+                Go to my feed
+              </a>
+            )}
 
             {testResult && (
               <div>
