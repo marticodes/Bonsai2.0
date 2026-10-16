@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.services.bluesky import get_timeline
+from app.services.bluesky import get_feed
 
 
 router = APIRouter(
@@ -12,8 +12,14 @@ router = APIRouter(
 @router.get("/posts")
 async def get_posts():
 
-    posts = await get_timeline(
-        limit=10
+    feed_uri = (
+        "at://did:plc:z72i7hdynmk6r22z27h6tvur/"
+        "app.bsky.feed.generator/hot-classic"
+    )
+
+    posts = await get_feed(
+        feed_uri=feed_uri,
+        limit=20,
     )
 
     return {

@@ -47,7 +47,9 @@ export default function FeedPage() {
           },
           body: JSON.stringify({
             specification,
-            limit: 10,
+            feed_uri:
+              "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/hot-classic",
+            limit: 30,
           }),
         }
       );

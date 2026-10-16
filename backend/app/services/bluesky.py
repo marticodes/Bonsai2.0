@@ -4,9 +4,15 @@ from atproto import AsyncClient
 
 
 client = AsyncClient()
+_logged_in = False
 
 
 async def login_to_bluesky():
+    global _logged_in
+
+    if _logged_in:
+        return
+
     handle = os.getenv("BLUESKY_HANDLE")
     app_password = os.getenv("BLUESKY_APP_PASSWORD")
 
@@ -20,14 +26,20 @@ async def login_to_bluesky():
         handle,
         app_password,
     )
+    _logged_in = True
 
 
-async def get_timeline(limit: int = 10):
+async def get_feed(
+    feed_uri: str,
+    limit: int = 30,
+):
     await login_to_bluesky()
 
-    response = await client.get_timeline(
-        algorithm="reverse-chronological",
-        limit=limit,
+    response = await client.app.bsky.feed.get_feed(
+        {
+            "feed": feed_uri,
+            "limit": limit,
+        }
     )
 
     posts = []
