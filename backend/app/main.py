@@ -10,6 +10,7 @@ from app.api.curate import router as curate_router
 from app.api.bluesky import router as bluesky_router
 from app.api.feed import router as feed_router
 from app.api.values import router as values_router
+from app.api.generate import router as generate_router
 
 
 
@@ -28,6 +29,7 @@ app.include_router(curate_router)
 app.include_router(bluesky_router)
 app.include_router(feed_router)
 app.include_router(values_router)
+app.include_router(generate_router)
 
 @app.get("/")
 def root():

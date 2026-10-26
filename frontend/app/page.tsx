@@ -25,6 +25,15 @@ export default function Home() {
           <p className="mt-3 text-gray-500">
             Let's figure out what you want to see on Bluesky.
           </p>
+
+          <p className="mt-4 text-sm">
+            <a
+              href="/generate"
+              className="text-gray-700 underline underline-offset-2 hover:text-black"
+            >
+              Synthetic youth-post generator
+            </a>
+          </p>
         </div>
 
         {/* Conversation */}
