@@ -23,14 +23,12 @@ You create ONE synthetic social media post for academic research on how
 people aged 10–16 experience Snapchat, Instagram, and TikTok.
 
 Hard rules:
-- Invent a fully fictional minor (first name + vague age only). Never copy
-  real creators, influencers, classmates, schools, brands-as-people, or
-  identifiable photos/likenesses.
+- Invent a fully fictional minor (first name + vague age only).
 - Strongly concerning themes (FOMO, exclusion, appearance pressure, peer
   drama, risky trends) may appear when relevant.
-- Match the selected platform's native style: captions, slang, emojis, pacing, and (for media prompts) candid phone-photo or vertical short-form aesthetics.
-- Vary wording naturally; do not reuse stock templates.
-- Some posts should contain subtle warning signs or contextual clues that a parent might overlook or interpret differently from a teenager. Examples include a friend insisting on secrecy, pressure to prove loyalty, an invitation to move a conversation elsewhere, a humiliating joke disguised as humor, or a risky trend presented as normal.
+- Match the selected platform's native style: captions, pacing, and (for media prompts) candid phone-photo or vertical short-form aesthetics.
+- Take into account the reference screenshots to generate a post that is similar to the reference screenshots, similar in the message they want to convey (for example, dangerous life style should be mirrored in the generate post)
+- Posts should contain warning signs or contextual clues that a parent might overlook or interpret differently from a teenager. Examples include risky trend presented as normal.
 
 Return ONLY valid JSON with these keys:
 {
@@ -39,9 +37,17 @@ Return ONLY valid JSON with these keys:
   "age": 10-16 integer,
   "caption": "platform-native caption text",
   "image_prompt": "detailed image prompt or empty string",
-  "video_prompt": "detailed vertical video prompt or empty string"
 }
 """
+
+
+def _field(value: str, infer: bool) -> str:
+    text = value.strip()
+    if text:
+        return text
+    if infer:
+        return "(not specified — infer from the reference screenshots)"
+    return "(not specified)"
 
 
 def _build_user_prompt(
@@ -52,12 +58,13 @@ def _build_user_prompt(
     context: str,
     values: str,
     constraints: str,
+    reference_count: int = 0,
 ) -> str:
     media_instruction = {
         "text": "Format is TEXT ONLY. Leave image_prompt and video_prompt empty.",
         "image": (
             "Format is IMAGE + caption. Write a candid phone-photo style "
-            "image_prompt (no real people/celebrities, no readable logos). "
+            "image_prompt"
             "Leave video_prompt empty."
         ),
         "video": (
@@ -68,14 +75,23 @@ def _build_user_prompt(
         ),
     }[fmt]
 
+    similar = ""
+    if reference_count:
+        similar = f"""
+{reference_count} reference screenshot(s) of existing posts are attached.
+Generate ONE new fictional post that feels similar: same kind of situation,
+tone, pacing, slang level, and visual vibe.
+The post has to represet the closest the image provided, in the positive and negative aspects.
+"""
+
     return f"""
 Platform: {platform}
 {media_instruction}
-
-Topic: {topic}
-Tone: {tone}
-Context: {context}
-Values to reflect: {values}
+{similar}
+Topic: {_field(topic, bool(reference_count))}
+Tone: {_field(tone, bool(reference_count))}
+Context: {_field(context, bool(reference_count))}
+Values to reflect: {_field(values, bool(reference_count))}
 Optional constraints: {constraints or "none"}
 """
 
@@ -88,19 +104,42 @@ async def _llm_plan(
     context: str,
     values: str,
     constraints: str,
+    reference_images: list[str] | None = None,
 ) -> dict[str, Any]:
+    images = reference_images or []
+    prompt = _build_user_prompt(
+        platform,
+        fmt,
+        topic,
+        tone,
+        context,
+        values,
+        constraints,
+        reference_count=len(images),
+    )
+    if images:
+        user_content: str | list[dict[str, Any]] = [
+            {"type": "text", "text": prompt},
+            *[
+                {
+                    "type": "image_url",
+                    "image_url": {"url": image, "detail": "high"},
+                }
+                for image in images
+            ],
+        ]
+        model = os.getenv("OPENAI_VISION_MODEL", "gpt-4o")
+    else:
+        user_content = prompt
+        model = os.getenv("OPENAI_TEXT_MODEL", "gpt-4o-mini")
+
     response = await client.chat.completions.create(
-        model=os.getenv("OPENAI_TEXT_MODEL", "gpt-4o-mini"),
+        model=model,
         temperature=0.95,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": _build_user_prompt(
-                    platform, fmt, topic, tone, context, values, constraints
-                ),
-            },
+            {"role": "user", "content": user_content},
         ],
     )
     raw = response.choices[0].message.content or "{}"
@@ -109,7 +148,7 @@ async def _llm_plan(
 
 async def _generate_image(prompt: str) -> tuple[bytes, str]:
     result = await client.images.generate(
-        model=os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-1"),
+        model=os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-1.5"),
         prompt=(
             "Authentic candid smartphone photo aesthetic for a synthetic "
             "teen social-media research stimulus. No real celebrities, no "
@@ -264,9 +303,17 @@ async def generate_post(
     context: str,
     values: str,
     constraints: str = "",
+    reference_images: list[str] | None = None,
 ) -> dict[str, Any]:
     plan = await _llm_plan(
-        platform, fmt, topic, tone, context, values, constraints
+        platform,
+        fmt,
+        topic,
+        tone,
+        context,
+        values,
+        constraints,
+        reference_images,
     )
 
     caption = str(plan.get("caption") or "").strip()

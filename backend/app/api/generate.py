@@ -1,19 +1,40 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.services.generator import Format, Platform, generate_post
 
 router = APIRouter(prefix="/api/generate", tags=["generate"])
 
+_MAX_IMAGES = 4
+_MAX_IMAGE_CHARS = 8_000_000
+
 
 class GenerateRequest(BaseModel):
     platform: Platform
     format: Format
-    topic: str = Field(min_length=1)
-    tone: str = Field(min_length=1)
-    context: str = Field(min_length=1)
-    values: str = Field(min_length=1)
+    topic: str = ""
+    tone: str = ""
+    context: str = ""
+    values: str = ""
     constraints: str = ""
+    reference_images: list[str] = Field(default_factory=list, max_length=_MAX_IMAGES)
+
+    @model_validator(mode="after")
+    def require_brief_or_screenshots(self):
+        filled = all(
+            field.strip()
+            for field in (self.topic, self.tone, self.context, self.values)
+        )
+        if not filled and not self.reference_images:
+            raise ValueError(
+                "Add a screenshot, or fill in topic, tone, context, and values."
+            )
+        for image in self.reference_images:
+            if not image.startswith("data:image/"):
+                raise ValueError("Screenshots must be image files.")
+            if len(image) > _MAX_IMAGE_CHARS:
+                raise ValueError("A screenshot is too large. Try a smaller image.")
+        return self
 
 
 class DownloadPayload(BaseModel):
@@ -45,6 +66,7 @@ async def generate(req: GenerateRequest) -> GenerateResponse:
             context=req.context.strip(),
             values=req.values.strip(),
             constraints=req.constraints.strip(),
+            reference_images=req.reference_images,
         )
         return GenerateResponse(**result)
     except RuntimeError as exc:

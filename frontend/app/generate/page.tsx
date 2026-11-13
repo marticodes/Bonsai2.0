@@ -1,7 +1,7 @@
 "use client";
 
-import { Download, LoaderCircle, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Download, ImagePlus, LoaderCircle, Sparkles, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 type Platform = "snapchat" | "instagram" | "tiktok";
 type Format = "text" | "image" | "video";
@@ -23,6 +23,30 @@ type GenerateResult = {
 };
 
 const API = "http://127.0.0.1:8000/api/generate";
+const MAX_SHOTS = 4;
+
+type ReferenceShot = {
+  id: string;
+  name: string;
+  dataUrl: string;
+};
+
+async function compressImage(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const maxEdge = 1280;
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    throw new Error("Couldn't read that image. Use a PNG or JPEG.");
+  }
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
 
 function downloadBase64(filename: string, mime: string, b64: string) {
   const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -43,9 +67,11 @@ export default function GeneratePage() {
   const [context, setContext] = useState("");
   const [values, setValues] = useState("");
   const [constraints, setConstraints] = useState("");
+  const [shots, setShots] = useState<ReferenceShot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<GenerateResult | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   async function onGenerate() {
     setLoading(true);
@@ -64,6 +90,7 @@ export default function GeneratePage() {
           context,
           values,
           constraints,
+          reference_images: shots.map((shot) => shot.dataUrl),
         }),
       });
 
@@ -86,12 +113,45 @@ export default function GeneratePage() {
     }
   }
 
-  const canSubmit =
-    topic.trim() &&
-    tone.trim() &&
-    context.trim() &&
-    values.trim() &&
-    !loading;
+  async function addShots(files: FileList | File[]) {
+    const incoming = Array.from(files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+    if (!incoming.length) {
+      setError("Upload a PNG or JPEG screenshot.");
+      return;
+    }
+
+    const room = MAX_SHOTS - shots.length;
+    if (room <= 0) {
+      setError(`You can attach up to ${MAX_SHOTS} screenshots.`);
+      return;
+    }
+
+    setError("");
+    const accepted = incoming.slice(0, room);
+    try {
+      const next = await Promise.all(
+        accepted.map(async (file) => ({
+          id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+          name: file.name,
+          dataUrl: await compressImage(file),
+        }))
+      );
+      setShots((current) => [...current, ...next].slice(0, MAX_SHOTS));
+      if (incoming.length > room) {
+        setError(`Only the first ${MAX_SHOTS} screenshots were kept.`);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Couldn't read that image."
+      );
+    }
+  }
+
+  const hasBrief =
+    topic.trim() && tone.trim() && context.trim() && values.trim();
+  const canSubmit = (hasBrief || shots.length > 0) && !loading;
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-12 text-gray-900">
@@ -138,6 +198,70 @@ export default function GeneratePage() {
               </select>
             </label>
 
+            <div className="text-sm">
+              <span className="mb-1.5 block font-medium">
+                Reference screenshots{" "}
+                <span className="font-normal text-gray-400">
+                  {shots.length ? "(style only)" : "(optional)"}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files.length) {
+                    void addShots(e.dataTransfer.files);
+                  }
+                }}
+                className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-5 text-gray-500 transition hover:border-gray-400 hover:bg-gray-100"
+              >
+                <ImagePlus size={18} />
+                <span>Drop post screenshots, or click to upload</span>
+                <span className="text-xs text-gray-400">
+                  Up to {MAX_SHOTS} images. The new post matches the vibe
+                  without copying names, faces, or the exact caption.
+                </span>
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.length) void addShots(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              {shots.length > 0 && (
+                <ul className="mt-3 grid grid-cols-4 gap-2">
+                  {shots.map((shot) => (
+                    <li key={shot.id} className="relative">
+                      <img
+                        src={shot.dataUrl}
+                        alt={shot.name}
+                        className="h-20 w-full rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Remove ${shot.name}`}
+                        onClick={() =>
+                          setShots((current) =>
+                            current.filter((item) => item.id !== shot.id)
+                          )
+                        }
+                        className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
+                      >
+                        <X size={12} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             {(
               [
                 ["Topic", topic, setTopic, "e.g. school lunch drama"],
@@ -157,7 +281,14 @@ export default function GeneratePage() {
               ] as const
             ).map(([label, value, setter, placeholder]) => (
               <label key={label} className="block text-sm">
-                <span className="mb-1.5 block font-medium">{label}</span>
+                <span className="mb-1.5 block font-medium">
+                  {label}{" "}
+                  {shots.length > 0 && (
+                    <span className="font-normal text-gray-400">
+                      (optional)
+                    </span>
+                  )}
+                </span>
                 <input
                   value={value}
                   onChange={(e) => setter(e.target.value)}
@@ -192,7 +323,9 @@ export default function GeneratePage() {
                   Generating…
                 </>
               ) : (
-                "Generate post"
+                shots.length
+                  ? "Generate a post similar to this"
+                  : "Generate post"
               )}
             </button>
 
@@ -217,7 +350,9 @@ export default function GeneratePage() {
 
           {loading && (
             <p className="text-sm text-gray-500">
-              Calling GPT
+              {shots.length
+                ? "Reading the screenshot and writing a similar post"
+                : "Calling GPT"}
               {format === "image"
                 ? " + image API"
                 : format === "video"

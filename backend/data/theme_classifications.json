@@ -1,0 +1,229 @@
+{
+  "total_posts": 43,
+  "posts": [
+    {
+      "cluster_id": 1,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 2,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 3,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 4,
+      "category": "Relationships"
+    },
+    {
+      "cluster_id": 5,
+      "category": "Entertainment"
+    },
+    {
+      "cluster_id": 6,
+      "category": "Technology"
+    },
+    {
+      "cluster_id": 7,
+      "category": "Technology"
+    },
+    {
+      "cluster_id": 8,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 9,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 10,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 11,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 12,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 13,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 14,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 15,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 16,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 17,
+      "category": "Beauty"
+    },
+    {
+      "cluster_id": 18,
+      "category": "Beauty"
+    },
+    {
+      "cluster_id": 19,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 20,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 21,
+      "category": "Education"
+    },
+    {
+      "cluster_id": 22,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 23,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 24,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 25,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 26,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 27,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 28,
+      "category": "Beauty"
+    },
+    {
+      "cluster_id": 29,
+      "category": "Lifestyle"
+    },
+    {
+      "cluster_id": 30,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 31,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 32,
+      "category": "Other"
+    },
+    {
+      "cluster_id": 33,
+      "category": "Relationships"
+    },
+    {
+      "cluster_id": 34,
+      "category": "Relationships"
+    },
+    {
+      "cluster_id": 35,
+      "category": "Education"
+    },
+    {
+      "cluster_id": 36,
+      "category": "Education"
+    },
+    {
+      "cluster_id": 37,
+      "category": "Education"
+    },
+    {
+      "cluster_id": 38,
+      "category": "Education"
+    },
+    {
+      "cluster_id": 39,
+      "category": "Education"
+    },
+    {
+      "cluster_id": 40,
+      "category": "Beauty"
+    },
+    {
+      "cluster_id": 41,
+      "category": "Beauty"
+    },
+    {
+      "cluster_id": 42,
+      "category": "Beauty"
+    },
+    {
+      "cluster_id": 43,
+      "category": "Other"
+    }
+  ],
+  "categories": [
+    {
+      "category": "Beauty",
+      "count": 6,
+      "percentage": 14.0
+    },
+    {
+      "category": "Gaming",
+      "count": 0,
+      "percentage": 0.0
+    },
+    {
+      "category": "Sports",
+      "count": 0,
+      "percentage": 0.0
+    },
+    {
+      "category": "Entertainment",
+      "count": 1,
+      "percentage": 2.3
+    },
+    {
+      "category": "Lifestyle",
+      "count": 11,
+      "percentage": 25.6
+    },
+    {
+      "category": "Education",
+      "count": 6,
+      "percentage": 13.9
+    },
+    {
+      "category": "Technology",
+      "count": 2,
+      "percentage": 4.6
+    },
+    {
+      "category": "Relationships",
+      "count": 3,
+      "percentage": 7.0
+    },
+    {
+      "category": "News",
+      "count": 0,
+      "percentage": 0.0
+    },
+    {
+      "category": "Other",
+      "count": 14,
+      "percentage": 32.6
+    }
+  ]
+}

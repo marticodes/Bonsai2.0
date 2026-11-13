@@ -11,6 +11,7 @@ from app.api.bluesky import router as bluesky_router
 from app.api.feed import router as feed_router
 from app.api.values import router as values_router
 from app.api.generate import router as generate_router
+from app.api.video import router as video_router
 
 
 
@@ -30,6 +31,7 @@ app.include_router(bluesky_router)
 app.include_router(feed_router)
 app.include_router(values_router)
 app.include_router(generate_router)
+app.include_router(video_router)
 
 @app.get("/")
 def root():

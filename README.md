@@ -22,7 +22,7 @@ No accounts, database, or post library. Nothing is persisted server-side.
 | Capability | Provider | Env var | Notes |
 | --- | --- | --- | --- |
 | Captions / planning | OpenAI GPT | `OPENAI_API_KEY` | Default model `gpt-4o-mini` |
-| Images | OpenAI Images | `OPENAI_API_KEY` | Default model `gpt-image-1` (vertical `1024x1536`) |
+| Images | OpenAI Images | `OPENAI_API_KEY` | Default model `gpt-image-1.5` (vertical `1024x1536`) |
 | Video (~10s) | fal.ai | `FAL_KEY` | **Required for video.** OpenAI Sora / Videos API was shut down (2026-09-24). Default model `fal-ai/minimax/video-01` |
 
 Copy `backend/.env.example` → `backend/.env` and fill in keys.
